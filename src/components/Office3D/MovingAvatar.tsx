@@ -97,53 +97,50 @@ export default function MovingAvatar({
     return true;
   };
 
-  // Cambiar objetivo cada 5-10 segundos (depende del estado)
+  // Furniture destinations (must match positions in Office3D scene)
+  const DESTINATIONS = {
+    // FileCabinet at (-8, 0, -5) — stand in front
+    memory:     new Vector3(-6.5, 0.6, -4.0),
+    // Whiteboard at (0, 0, -8) — stand in front
+    coding:     new Vector3(0,    0.6, -6.5),
+    // CoffeeMachine area at (8, 0.8, -5) — stand nearby
+    telegram:   new Vector3(6.5,  0.6, -4.0),
+    // Center of room — pacing/delegating
+    delegating: new Vector3(0,    0.6,  0  ),
+  };
+
+  // When activity changes to a known destination, go there immediately
   useEffect(() => {
-    const getNewTarget = () => {
+    const dest = DESTINATIONS[state.activity as keyof typeof DESTINATIONS];
+    if (dest) {
+      setTargetPos(dest.clone());
+    }
+  }, [state.activity]);
+
+  // Random roaming — only when idle or no specific destination
+  useEffect(() => {
+    if (['memory', 'coding', 'telegram', 'delegating'].includes(state.activity)) return;
+
+    const getRandomTarget = () => {
       let attempts = 0;
       let newPos: Vector3;
-
-      // Intentar encontrar una posición libre (máximo 20 intentos)
       do {
         const x = Math.random() * (officeBounds.maxX - officeBounds.minX) + officeBounds.minX;
         const z = Math.random() * (officeBounds.maxZ - officeBounds.minZ) + officeBounds.minZ;
         newPos = new Vector3(x, 0.6, z);
         attempts++;
       } while (!isPositionFree(newPos) && attempts < 20);
-
-      if (attempts < 20) {
-        setTargetPos(newPos);
-      }
+      if (attempts < 20) setTargetPos(newPos);
     };
 
-    // Idle: moverse más frecuentemente
-    // Working: moverse menos
-    // Thinking: moverse muy poco
-    // Error: quedarse quieto
-    const getInterval = () => {
-      switch (state.status) {
-        case 'idle':
-          return 3000 + Math.random() * 3000; // 3-6s
-        case 'working':
-          return 8000 + Math.random() * 7000; // 8-15s
-        case 'thinking':
-          return 15000 + Math.random() * 10000; // 15-25s
-        case 'error':
-          return 30000; // casi quieto
-        default:
-          return 10000;
-      }
-    };
+    const interval = state.status === 'idle'
+      ? 4000 + Math.random() * 3000
+      : 10000 + Math.random() * 8000;
 
-    // Primer objetivo después de montar
-    const timeout = setTimeout(getNewTarget, 1000);
-    const interval = setInterval(getNewTarget, getInterval());
-    
-    return () => {
-      clearTimeout(timeout);
-      clearInterval(interval);
-    };
-  }, [state.status]);
+    const timeout = setTimeout(getRandomTarget, 1000);
+    const timer = setInterval(getRandomTarget, interval);
+    return () => { clearTimeout(timeout); clearInterval(timer); };
+  }, [state.status, state.activity]);
 
   // Mover suavemente hacia el objetivo
   useFrame((frameState, delta) => {
