@@ -73,6 +73,23 @@ export const MODEL_PRICING: ModelPricing[] = [
     outputPricePerMillion: 1.10,
     contextWindow: 1000000,
   },
+  // DeepSeek
+  {
+    id: "deepseek/deepseek-v4-flash",
+    name: "DeepSeek V4 Flash",
+    alias: "deepseek-flash",
+    inputPricePerMillion: 0.27,
+    outputPricePerMillion: 1.10,
+    contextWindow: 128000,
+  },
+  {
+    id: "deepseek/deepseek-r1",
+    name: "DeepSeek R1",
+    alias: "deepseek-r1",
+    inputPricePerMillion: 0.55,
+    outputPricePerMillion: 2.19,
+    contextWindow: 128000,
+  },
 ];
 
 /**
@@ -128,7 +145,12 @@ export function normalizeModelId(modelId: string): string {
     "claude-sonnet-4-5": "anthropic/claude-sonnet-4-5",
     "claude-haiku-3-5": "anthropic/claude-haiku-3-5",
     "gemini-2.5-flash": "google/gemini-2.5-flash",
+    "gemini-2.5-flash-preview": "google/gemini-2.5-flash",
+    "google/gemini-2.5-flash-preview": "google/gemini-2.5-flash",
     "gemini-2.5-pro": "google/gemini-2.5-pro",
+    // DeepSeek
+    "deepseek-flash": "deepseek/deepseek-v4-flash",
+    "deepseek-v4-flash": "deepseek/deepseek-v4-flash",
     // MiniMax
     minimax: "minimax/minimax-m2.5",
     "minimax-m2.5": "minimax/minimax-m2.5",

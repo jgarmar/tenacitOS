@@ -71,23 +71,31 @@ export async function GET() {
 
   // External URLs
   const urlChecks = await Promise.all([
-    checkUrl('https://tenacitas.cazaustre.dev'),
+    checkUrl('https://tenazo.jgarmar.es', 5000),
+    checkUrl('https://openclaw.jgarmar.es', 5000),
     checkUrl('https://api.anthropic.com', 3000),
   ]);
 
   checks.push({
-    name: 'tenacitas.cazaustre.dev',
+    name: 'TenacitOS Dashboard',
     status: urlChecks[0].status,
     latency: urlChecks[0].latency,
-    url: 'https://tenacitas.cazaustre.dev',
+    url: 'https://tenazo.jgarmar.es',
+  });
+
+  checks.push({
+    name: 'OpenClaw Web',
+    status: urlChecks[1].status,
+    latency: urlChecks[1].latency,
+    url: 'https://openclaw.jgarmar.es',
   });
 
   checks.push({
     name: 'Anthropic API',
-    status: urlChecks[1].status === 'up' || (urlChecks[1] as { httpCode?: number }).httpCode === 401 ? 'up' : urlChecks[1].status,
-    latency: urlChecks[1].latency,
+    status: urlChecks[2].status === 'up' || (urlChecks[2] as { httpCode?: number }).httpCode === 401 ? 'up' : urlChecks[2].status,
+    latency: urlChecks[2].latency,
     url: 'https://api.anthropic.com',
-    details: urlChecks[1].status === 'up' || (urlChecks[1] as { httpCode?: number }).httpCode === 401 ? 'reachable' : 'unreachable',
+    details: urlChecks[2].status === 'up' || (urlChecks[2] as { httpCode?: number }).httpCode === 401 ? 'reachable' : 'unreachable',
   });
 
   // Overall status

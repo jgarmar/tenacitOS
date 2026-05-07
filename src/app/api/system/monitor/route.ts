@@ -5,6 +5,52 @@ import os from "os";
 
 const execAsync = promisify(exec);
 
+import fs from "fs";
+
+// Per-core CPU tracker (module-level cache for delta calculation)
+interface CpuStat { user: number; nice: number; system: number; idle: number; iowait: number; irq: number; softirq: number; }
+let lastCpuStats: CpuStat[] | null = null;
+let lastCpuReadTime = 0;
+
+function readProcStat(): CpuStat[] {
+  try {
+    const lines = fs.readFileSync('/proc/stat', 'utf8').split('\n');
+    return lines
+      .filter(l => /^cpu[0-9]/.test(l))
+      .map(l => {
+        const [, user, nice, system, idle, iowait, irq, softirq] = l.split(/\s+/).map(Number);
+        return { user, nice, system, idle, iowait: iowait||0, irq: irq||0, softirq: softirq||0 };
+      });
+  } catch { return []; }
+}
+
+function getPerCoreCpuUsage(): number[] {
+  const now = Date.now();
+  const current = readProcStat();
+  if (!current.length) return os.cpus().map(() => 0);
+
+  let usages: number[];
+  if (lastCpuStats && lastCpuStats.length === current.length && now - lastCpuReadTime < 60000) {
+    usages = current.map((cur, i) => {
+      const prev = lastCpuStats![i];
+      const totalDelta = (cur.user + cur.nice + cur.system + cur.idle + cur.iowait + cur.irq + cur.softirq)
+                       - (prev.user + prev.nice + prev.system + prev.idle + prev.iowait + prev.irq + prev.softirq);
+      const idleDelta = cur.idle - prev.idle;
+      if (totalDelta <= 0) return 0;
+      return Math.round(((totalDelta - idleDelta) / totalDelta) * 100);
+    });
+  } else {
+    // First read — use load-avg approximation spread across cores
+    const load = os.loadavg()[0];
+    usages = current.map(() => Math.min(Math.round((load / current.length) * 100), 100));
+  }
+
+  lastCpuStats = current;
+  lastCpuReadTime = now;
+  return usages;
+}
+
+
 // Services monitored per backend
 const SYSTEMD_SERVICES = ["mission-control"];
 const PM2_SERVICES = ["classvault", "content-vault", "postiz-simple", "brain"];
@@ -285,7 +331,7 @@ export async function GET() {
     return NextResponse.json({
       cpu: {
         usage: cpuUsage,
-        cores: os.cpus().map(() => Math.round(Math.random() * 100)),
+        cores: getPerCoreCpuUsage(),
         loadAvg,
       },
       ram: {
