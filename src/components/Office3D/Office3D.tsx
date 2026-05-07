@@ -40,16 +40,12 @@ export default function Office3D() {
 
         const states: Record<string, AgentState> = {};
         for (const a of data.agents) {
-          const task: string = a.currentTask || '';
-          let status: AgentState['status'] = 'idle';
-          if (task.startsWith('ACTIVE:')) status = 'working';
-          else if (task.startsWith('IDLE:')) status = 'idle';
-          else if (!a.isActive) status = 'idle';
-
+          const status: AgentState['status'] = a.isActive ? 'working' : 'idle';
           states[a.id] = {
             id: a.id,
             status,
-            currentTask: task.replace(/^(ACTIVE|IDLE|SLEEPING):\s*/, ''),
+            currentTask: a.currentTask || '',
+            model: a.model || undefined,
           };
         }
         setAgentStates(states);
