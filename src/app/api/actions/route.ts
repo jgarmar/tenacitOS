@@ -48,13 +48,20 @@ async function runAction(action: string): Promise<ActionResult> {
       }
 
       case 'restart-gateway': {
-        const { stdout, stderr } = await execAsync('systemctl restart openclaw-gateway 2>&1 || echo "Service not found"');
-        output = stdout || stderr || 'Restart command executed';
-        // Also check status
+        // OpenClaw runs as a node process on port 18789 — send SIGHUP to reload config
         try {
-          const { stdout: status } = await execAsync('systemctl is-active openclaw-gateway 2>&1 || echo "unknown"');
-          output += `\nStatus: ${status.trim()}`;
-        } catch {}
+          const { stdout: pid } = await execAsync("pgrep -f 'openclaw.*gateway' 2>/dev/null || echo ''");
+          if (pid.trim()) {
+            await execAsync(`kill -HUP ${pid.trim()} 2>/dev/null || true`);
+            output = `✅ Sent reload signal to OpenClaw gateway (PID ${pid.trim()})`;
+          } else {
+            output = '⚠️ OpenClaw gateway process not found';
+          }
+          const { stdout: portCheck } = await execAsync("ss -tlnp | grep 18789 | head -1");
+          output += portCheck.trim() ? '\n✅ Port 18789: listening' : '\n❌ Port 18789: not listening';
+        } catch (e: any) {
+          output = `Error: ${e.message}`;
+        }
         break;
       }
 
@@ -80,9 +87,7 @@ async function runAction(action: string): Promise<ActionResult> {
       }
 
       case 'heartbeat': {
-        // Check all critical services
         const services = ['mission-control'];
-        const pm2services = ['classvault', 'content-vault', 'brain'];
         const results: string[] = [];
 
         for (const svc of services) {
@@ -91,24 +96,23 @@ async function runAction(action: string): Promise<ActionResult> {
           results.push(`${status === 'active' ? '✅' : '❌'} ${svc}: ${status}`);
         }
 
+        // Check OpenClaw gateway port
         try {
-          const { stdout: pm2 } = await execAsync('pm2 jlist 2>/dev/null');
-          const pm2list = JSON.parse(pm2);
-          for (const svc of pm2services) {
-            const proc = pm2list.find((p: { name: string }) => p.name === svc);
-            const status = proc?.pm2_env?.status || 'not found';
-            results.push(`${status === 'online' ? '✅' : '❌'} ${svc} (pm2): ${status}`);
-          }
+          const { stdout: portCheck } = await execAsync("ss -tlnp | grep 18789 | head -1");
+          results.push(portCheck.trim() ? '✅ openclaw-gateway: port 18789 active' : '❌ openclaw-gateway: port 18789 not listening');
         } catch {
-          results.push('⚠️ PM2: could not connect');
+          results.push('⚠️ openclaw-gateway: check failed');
         }
 
-        // Ping the main site
-        try {
-          const { stdout: ping } = await execAsync('curl -s -o /dev/null -w "%{http_code}" --max-time 5 https://tenacitas.cazaustre.dev');
-          results.push(`\n🌐 tenacitas.cazaustre.dev: HTTP ${ping.trim()}`);
-        } catch {
-          results.push('\n🌐 tenacitas.cazaustre.dev: unreachable');
+        // Ping own domains
+        const domains = ['https://tenazo.jgarmar.es', 'https://openclaw.jgarmar.es'];
+        for (const domain of domains) {
+          try {
+            const { stdout: ping } = await execAsync(`curl -s -o /dev/null -w "%{http_code}" --max-time 5 ${domain}`);
+            results.push(`🌐 ${domain.replace('https://', '')}: HTTP ${ping.trim()}`);
+          } catch {
+            results.push(`🌐 ${domain.replace('https://', '')}: unreachable`);
+          }
         }
 
         output = results.join('\n');

@@ -54,10 +54,7 @@ function getPerCoreCpuUsage(): number[] {
 // Services monitored per backend
 const SYSTEMD_SERVICES = ["mission-control"];
 const PM2_SERVICES = ["classvault", "content-vault", "postiz-simple", "brain"];
-// creatoros not deployed yet — shown as "not_deployed"
-const PLACEHOLDER_SERVICES = [
-  { name: "creatoros", description: "Creatoros Platform", status: "not_deployed" },
-];
+const PLACEHOLDER_SERVICES: { name: string; description: string; status: string }[] = [];
 
 interface ServiceEntry {
   name: string;
@@ -111,7 +108,6 @@ const SERVICE_DESCRIPTIONS: Record<string, string> = {
   "content-vault": "Content Vault – Draft Management Webapp",
   "postiz-simple": "Postiz – Social Media Scheduler",
   brain: "Brain – Internal Tools",
-  creatoros: "Creatoros Platform",
 };
 
 export async function GET() {
@@ -354,11 +350,7 @@ export async function GET() {
         devices:
           tailscaleDevices.length > 0
             ? tailscaleDevices
-            : [
-                { ip: "100.122.105.85", hostname: "srv1328267", os: "linux", online: true },
-                { ip: "100.106.86.52", hostname: "iphone182", os: "iOS", online: true },
-                { ip: "100.72.14.113", hostname: "macbook-pro-de-carlos", os: "macOS", online: true },
-              ],
+            : [],
       },
       firewall: {
         active: firewallActive || true,
