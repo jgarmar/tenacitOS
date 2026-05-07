@@ -1,87 +1,65 @@
 /**
- * Office 3D — Agent Configuration
+ * Office 3D — Agent positional layout
  *
- * This file defines the visual layout of agents in the 3D office.
- * Names, emojis and roles are loaded at runtime from the OpenClaw API
- * (/api/agents → openclaw.json), so you only need to set positions and colors here.
- *
- * Agent IDs correspond to workspace directory suffixes:
- *   id: "main"     → workspace/          (main agent)
- *   id: "studio"   → workspace-studio/
- *   id: "infra"    → workspace-infra/
- *   etc.
- *
- * Add, remove or reposition agents to match your own OpenClaw setup.
+ * IDs must match openclaw.json agents.list[].id
+ * Names/emojis/colors are overridden at runtime by /api/office.
  */
 
 export interface AgentConfig {
   id: string;
   name: string;
   emoji: string;
-  position: [number, number, number]; // x, y, z
+  position: [number, number, number];
   color: string;
   role: string;
 }
 
-export const AGENTS: AgentConfig[] = [
+// Positions available for agents — first N positions are used based on agent count
+export const POSITION_POOL: [number, number, number][] = [
+  [0, 0, 0],     // center
+  [-4, 0, -3],   // back-left
+  [4, 0, -3],    // back-right
+  [-4, 0, 3],    // front-left
+  [4, 0, 3],     // front-right
+  [0, 0, 5],     // front-center
+];
+
+// Fallback colors per slot
+const SLOT_COLORS = ['#FFCC00', '#4CAF50', '#E91E63', '#0077B5', '#9C27B0', '#607D8B'];
+
+// Default agents — overridden at runtime from /api/office
+export const DEFAULT_AGENTS: AgentConfig[] = [
   {
-    id: "main",
-    name: process.env.NEXT_PUBLIC_AGENT_NAME || "Mission Control",
-    emoji: process.env.NEXT_PUBLIC_AGENT_EMOJI || "🦞",
-    position: [0, 0, 0], // Center — main desk
-    color: "#FFCC00",
-    role: "Main Agent",
-  },
-  {
-    id: "agent-2",
-    name: "Agent 2",
-    emoji: "🤖",
-    position: [-4, 0, -3],
-    color: "#4CAF50",
-    role: "Sub-agent",
-  },
-  {
-    id: "agent-3",
-    name: "Agent 3",
-    emoji: "🤖",
-    position: [4, 0, -3],
-    color: "#E91E63",
-    role: "Sub-agent",
-  },
-  {
-    id: "agent-4",
-    name: "Agent 4",
-    emoji: "🤖",
-    position: [-4, 0, 3],
-    color: "#0077B5",
-    role: "Sub-agent",
-  },
-  {
-    id: "agent-5",
-    name: "Agent 5",
-    emoji: "🤖",
-    position: [4, 0, 3],
-    color: "#9C27B0",
-    role: "Sub-agent",
-  },
-  {
-    id: "agent-6",
-    name: "Agent 6",
-    emoji: "🤖",
-    position: [0, 0, 6],
-    color: "#607D8B",
-    role: "Sub-agent",
+    id: 'pirion',
+    name: process.env.NEXT_PUBLIC_AGENT_NAME || 'Pirion',
+    emoji: process.env.NEXT_PUBLIC_AGENT_EMOJI || '🧙‍♂️',
+    position: POSITION_POOL[0],
+    color: SLOT_COLORS[0],
+    role: 'Main Agent',
   },
 ];
 
-export type AgentStatus = "idle" | "working" | "thinking" | "error";
+export function buildAgentsFromApi(
+  apiAgents: { id: string; name: string; emoji: string; color: string; role: string }[]
+): AgentConfig[] {
+  return apiAgents.map((agent, i) => ({
+    id: agent.id,
+    name: agent.name,
+    emoji: agent.emoji,
+    color: agent.color || SLOT_COLORS[i % SLOT_COLORS.length],
+    position: POSITION_POOL[i % POSITION_POOL.length],
+    role: agent.role,
+  }));
+}
+
+export type AgentStatus = 'idle' | 'working' | 'thinking' | 'error';
 
 export interface AgentState {
   id: string;
   status: AgentStatus;
   currentTask?: string;
-  model?: string; // opus, sonnet, haiku
+  model?: string;
   tokensPerHour?: number;
   tasksInQueue?: number;
-  uptime?: number; // days
+  uptime?: number;
 }

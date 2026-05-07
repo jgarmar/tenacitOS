@@ -206,6 +206,8 @@ export async function GET() {
       // Map freelance -> devclaw for canvas compatibility
       const canvasId = agent.id === "freelance" ? "devclaw" : agent.id;
 
+      const model = (agent.model?.primary || config.agents?.defaults?.model?.primary || '').replace('openrouter/', '');
+
       return {
         id: canvasId,
         name: agentInfo.name,
@@ -214,6 +216,7 @@ export async function GET() {
         role: agentInfo.role,
         currentTask: status.currentTask,
         isActive: status.isActive,
+        model,
       };
     });
 
