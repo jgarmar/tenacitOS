@@ -57,17 +57,16 @@ export async function GET() {
   const checks: ServiceCheck[] = [];
 
   // Internal services
-  const [missionControl, gateway] = await Promise.all([
-    checkSystemdService('mission-control'),
-    checkSystemdService('openclaw-gateway'),
-  ]);
+  const missionControl = await checkSystemdService('mission-control');
   checks.push({ ...missionControl, name: 'Mission Control' });
-  checks.push({ ...gateway, name: 'OpenClaw Gateway' });
 
-  // PM2 services
-  const pm2Services = ['classvault', 'content-vault', 'brain'];
-  const pm2Checks = await Promise.all(pm2Services.map(checkPm2Service));
-  checks.push(...pm2Checks);
+  // Check OpenClaw gateway via port 18789
+  const openclawPort = await checkUrl('http://localhost:18789', 2000);
+  checks.push({
+    name: 'OpenClaw Gateway',
+    status: openclawPort.status,
+    details: openclawPort.status === 'up' ? 'port 18789 active' : 'not reachable',
+  });
 
   // External URLs
   const urlChecks = await Promise.all([
