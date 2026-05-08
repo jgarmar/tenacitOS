@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Clock, RefreshCw, AlertCircle, LayoutGrid, CalendarDays, Zap } from "lucide-react";
+import { Clock, RefreshCw, AlertCircle, LayoutGrid, CalendarDays, Zap, Plus } from "lucide-react";
 import { CronJobCard, type CronJob } from "@/components/CronJobCard";
 import { CronWeeklyTimeline } from "@/components/CronWeeklyTimeline";
+import { CronJobModal } from "@/components/CronJobModal";
 
 type ViewMode = "cards" | "timeline";
 
@@ -14,6 +15,9 @@ export default function CronJobsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [runToast, setRunToast] = useState<{ id: string; status: "success" | "error"; name: string } | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [editingJob, setEditingJob] = useState<CronJob | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -86,6 +90,41 @@ export default function CronJobsPage() {
     setTimeout(() => setRunToast(null), 4000);
   };
 
+  const handleOpenCreate = () => {
+    setEditingJob(null);
+    setShowModal(true);
+  };
+
+  const handleOpenEdit = (job: CronJob) => {
+    setEditingJob(job);
+    setShowModal(true);
+  };
+
+  const handleSave = async (jobData: Partial<CronJob>) => {
+    setIsSaving(true);
+    try {
+      const isEdit = !!jobData.id;
+      const res = await fetch("/api/cron", {
+        method: isEdit ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(jobData),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save job");
+      }
+
+      await fetchJobs();
+      setShowModal(false);
+      setEditingJob(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save job");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const activeJobs = jobs.filter((j) => j.enabled).length;
   const pausedJobs = jobs.length - activeJobs;
 
@@ -94,7 +133,7 @@ export default function CronJobsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 md:mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-1" style={{ 
+          <h1 className="text-2xl md:text-3xl font-bold mb-1" style={{
             color: 'var(--text-primary)',
             fontFamily: 'var(--font-heading)'
           }}>
@@ -104,7 +143,7 @@ export default function CronJobsPage() {
             Scheduled tasks from OpenClaw Gateway
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
           {/* View mode toggle */}
           <div
             style={{
@@ -175,6 +214,26 @@ export default function CronJobsPage() {
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
+          </button>
+
+          <button
+            onClick={handleOpenCreate}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.5rem 1rem',
+              backgroundColor: 'var(--accent)',
+              color: 'white',
+              borderRadius: '0.5rem',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 600,
+              transition: 'opacity 0.2s'
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            New Job
           </button>
         </div>
       </div>
@@ -269,9 +328,27 @@ export default function CronJobsPage() {
           <h3 style={{ fontSize: '1.125rem', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
             No cron jobs found
           </h3>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            Create cron jobs via Telegram or the OpenClaw CLI
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+            Create your first scheduled task
           </p>
+          <button
+            onClick={handleOpenCreate}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.6rem 1.25rem',
+              backgroundColor: 'var(--accent)',
+              color: 'white',
+              borderRadius: '0.5rem',
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            <Plus className="w-4 h-4" />
+            New Job
+          </button>
         </div>
       ) : viewMode === "timeline" ? (
         /* Timeline View */
@@ -327,7 +404,7 @@ export default function CronJobsPage() {
               <CronJobCard
                 job={job}
                 onToggle={handleToggle}
-                onEdit={() => {}}
+                onEdit={handleOpenEdit}
                 onDelete={handleDelete}
                 onRun={handleRun}
               />
@@ -359,6 +436,14 @@ export default function CronJobsPage() {
           ))}
         </div>
       )}
+
+      {/* Create/Edit Modal */}
+      <CronJobModal
+        isOpen={showModal}
+        onClose={() => { setShowModal(false); setEditingJob(null); }}
+        onSave={handleSave}
+        editingJob={editingJob}
+      />
 
       {/* Run toast notification */}
       {runToast && (

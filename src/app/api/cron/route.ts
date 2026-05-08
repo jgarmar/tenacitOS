@@ -1,18 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { execSync } from "child_process";
-
-function getGatewayConfig() {
-  try {
-    const configRaw = require("fs").readFileSync((process.env.OPENCLAW_DIR || "/root/.openclaw") + "/openclaw.json", "utf-8");
-    const config = JSON.parse(configRaw);
-    return {
-      token: config.gateway?.auth?.token || "",
-      port: config.gateway?.port || 18789,
-    };
-  } catch {
-    return { token: "", port: 18789 };
-  }
-}
+import { execSync, execFileSync } from "child_process";
 
 // GET: List all cron jobs from the OpenClaw gateway
 export async function GET() {
@@ -35,7 +22,6 @@ export async function GET() {
       payload: job.payload,
       delivery: job.delivery,
       state: job.state,
-      // Derived fields for the UI
       description: formatDescription(job),
       scheduleDisplay: formatSchedule(job.schedule as Record<string, unknown>),
       timezone: (job.schedule as Record<string, string>)?.tz || "UTC",
@@ -76,11 +62,12 @@ function formatSchedule(schedule: Record<string, unknown>): string {
   switch (schedule.kind) {
     case "cron":
       return `${schedule.expr}${schedule.tz ? ` (${schedule.tz})` : ""}`;
-    case "every":
+    case "every": {
       const ms = schedule.everyMs as number;
       if (ms >= 3600000) return `Every ${ms / 3600000}h`;
       if (ms >= 60000) return `Every ${ms / 60000}m`;
       return `Every ${ms / 1000}s`;
+    }
     case "at":
       return `Once at ${schedule.at}`;
     default:
@@ -88,24 +75,78 @@ function formatSchedule(schedule: Record<string, unknown>): string {
   }
 }
 
-// PUT: Toggle enable/disable a cron job
+// POST: Create a new cron job
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { name, schedule, timezone, description, agentId, message } = body;
+
+    if (!name || !schedule) {
+      return NextResponse.json({ error: "name and schedule are required" }, { status: 400 });
+    }
+
+    const tz = timezone || "UTC";
+    const agent = agentId || "pirion";
+    const msg = message || `Run scheduled task: ${name}`;
+
+    const args = [
+      "cron", "add",
+      "--name", name,
+      "--cron", schedule,
+      "--tz", tz,
+      "--agent", agent,
+      "--message", msg,
+      "--json",
+    ];
+    if (description) {
+      args.push("--description", description);
+    }
+
+    execFileSync("openclaw", args, { timeout: 10000, encoding: "utf-8" });
+
+    return GET();
+  } catch (error) {
+    console.error("Error creating cron job:", error);
+    return NextResponse.json(
+      { error: "Failed to create cron job" },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT: Toggle enable/disable OR edit name/schedule/description
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, enabled } = body;
+    const { id, enabled, name, schedule, timezone, description } = body;
 
     if (!id) {
       return NextResponse.json({ error: "Job ID is required" }, { status: 400 });
     }
 
-    const action = enabled ? "enable" : "disable";
-    // Use openclaw CLI to update the job
-    const output = execSync(
-      `openclaw cron ${action} ${id} --json 2>/dev/null || openclaw cron update ${id} --enabled=${enabled} --json 2>/dev/null`,
-      { timeout: 10000, encoding: "utf-8" }
-    );
+    // Edit job fields if name or schedule provided
+    if (name !== undefined || schedule !== undefined) {
+      const args = ["cron", "edit", id];
+      if (name) args.push("--name", name);
+      if (schedule) args.push("--cron", schedule);
+      if (timezone) args.push("--tz", timezone);
+      if (description !== undefined) args.push("--description", description);
 
-    return NextResponse.json({ success: true, id, enabled });
+      execFileSync("openclaw", args, { timeout: 10000, encoding: "utf-8" });
+      return NextResponse.json({ success: true, id });
+    }
+
+    // Toggle enable/disable
+    if (enabled !== undefined) {
+      const action = enabled ? "enable" : "disable";
+      execFileSync("openclaw", ["cron", action, id], {
+        timeout: 10000,
+        encoding: "utf-8",
+      });
+      return NextResponse.json({ success: true, id, enabled });
+    }
+
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   } catch (error) {
     console.error("Error updating cron job:", error);
     return NextResponse.json(
@@ -125,7 +166,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Job ID is required" }, { status: 400 });
     }
 
-    execSync(`openclaw cron remove ${id} 2>/dev/null`, {
+    execFileSync("openclaw", ["cron", "rm", id], {
       timeout: 10000,
       encoding: "utf-8",
     });
