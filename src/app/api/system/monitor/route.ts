@@ -52,8 +52,8 @@ function getPerCoreCpuUsage(): number[] {
 
 
 // Services monitored per backend
-const SYSTEMD_SERVICES = ["mission-control"];
-const PM2_SERVICES = ["classvault", "content-vault", "postiz-simple", "brain"];
+const SYSTEMD_SERVICES = ["mission-control", "openclaw-gateway"];
+const PM2_SERVICES: string[] = [];
 const PLACEHOLDER_SERVICES: { name: string; description: string; status: string }[] = [];
 
 interface ServiceEntry {
@@ -101,13 +101,9 @@ function normalizePm2Status(status: string): string {
   }
 }
 
-// Friendly display names for PM2 process names
 const SERVICE_DESCRIPTIONS: Record<string, string> = {
-  "mission-control": "Mission Control – Tenacitas Dashboard",
-  classvault: "ClassVault – LMS Platform",
-  "content-vault": "Content Vault – Draft Management Webapp",
-  "postiz-simple": "Postiz – Social Media Scheduler",
-  brain: "Brain – Internal Tools",
+  "mission-control": "Mission Control – TenacitOS Dashboard",
+  "openclaw-gateway": "OpenClaw Gateway – AI Agent Runtime",
 };
 
 export async function GET() {
