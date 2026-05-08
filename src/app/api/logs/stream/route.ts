@@ -5,7 +5,7 @@
 import { NextRequest } from 'next/server';
 import { spawn } from 'child_process';
 
-const ALLOWED_SERVICES = ['mission-control', 'classvault', 'content-vault', 'postiz-simple', 'brain', 'openclaw-gateway'];
+const ALLOWED_SERVICES = ['mission-control', 'openclaw-gateway'];
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

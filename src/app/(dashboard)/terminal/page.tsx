@@ -15,15 +15,16 @@ const QUICK_COMMANDS = [
   "df -h /",
   "free -h",
   "uptime",
-  "ps aux | grep node",
+  "cat /proc/loadavg",
   "systemctl status mission-control",
-  "pm2 list",
+  "systemctl status openclaw-gateway",
+  "ps aux | grep node",
   "ls /root/.openclaw/workspace",
+  "ls /root/.openclaw/agents",
   "git -C /root/.openclaw/workspace/mission-control status",
   "journalctl -u mission-control -n 20 --no-pager",
-  "docker ps",
+  "journalctl -u openclaw-gateway -n 20 --no-pager",
   "netstat -tlnp",
-  "cat /proc/loadavg",
 ];
 
 export default function TerminalPage() {
@@ -188,7 +189,7 @@ export default function TerminalPage() {
             <div key={i} style={{ marginBottom: "1rem" }}>
               {/* Command prompt */}
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.25rem" }}>
-                <span style={{ color: "#4ade80" }}>tenacitas@srv</span>
+                <span style={{ color: "#4ade80" }}>root@claw</span>
                 <span style={{ color: "#8b949e" }}>:</span>
                 <span style={{ color: "#60a5fa" }}>~</span>
                 <span style={{ color: "#c9d1d9" }}>$ {entry.command}</span>
