@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group, Vector3 } from 'three';
 import VoxelAvatar from './VoxelAvatar';
@@ -49,9 +49,12 @@ export default function MovingAvatar({
 
   // Chair is inside <group scale={2}> at position [0, 0, 0.9] in AgentDesk
   // → world offset from desk origin = [0, 0, 1.8]; seat top Y ≈ 0.88
-  const homePos = new Vector3(agent.position[0], 0.88, agent.position[2] + 1.8);
+  const homePos = useMemo(
+    () => new Vector3(agent.position[0], 0.88, agent.position[2] + 1.8),
+    [agent.position[0], agent.position[2]]
+  );
 
-  const [targetPos, setTargetPos] = useState(homePos.clone());
+  const [targetPos, setTargetPos] = useState(() => homePos.clone());
   const currentPos = useRef(homePos.clone());
 
   const isSitting = !ACTIVE_ACTIVITIES.includes(state.activity as typeof ACTIVE_ACTIVITIES[number]);

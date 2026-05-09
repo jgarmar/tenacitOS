@@ -163,81 +163,78 @@ export default function Office3D() {
       )}
 
       {interactionModal && (
-        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-yellow-500 rounded-lg p-8 max-w-2xl w-full mx-4 shadow-2xl">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-yellow-400">
+        <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+          <div style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '0.75rem', padding: '2rem', maxWidth: '42rem', width: '100%', margin: '0 1rem', boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                 {interactionModal === 'memory' && '📁 Memory Browser'}
                 {interactionModal === 'roadmap' && '📋 Roadmap & Planning'}
                 {interactionModal === 'energy' && '☕ Agent Energy Dashboard'}
               </h2>
-              <button onClick={handleCloseModal} className="text-gray-400 hover:text-white text-3xl leading-none">×</button>
+              <button onClick={handleCloseModal} style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', lineHeight: 1 }}>×</button>
             </div>
-            <div className="text-gray-300 space-y-4">
+            <div style={{ color: 'var(--text-secondary)' }}>
               {interactionModal === 'memory' && (
                 <>
-                  <p className="text-lg">🧠 Acceso a memorias y archivos del workspace</p>
-                  <div className="bg-gray-800 p-4 rounded border border-gray-700">
-                    <ul className="space-y-2">
-                      <li><a href="/memory" className="text-yellow-400 hover:underline">→ Memory Browser</a></li>
-                      <li><a href="/files" className="text-yellow-400 hover:underline">→ File Explorer</a></li>
+                  <p style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>🧠 Acceso a memorias y archivos del workspace</p>
+                  <div style={{ backgroundColor: 'var(--surface-elevated)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
+                    <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <li><a href="/memory" style={{ color: 'var(--accent)', textDecoration: 'none' }}>→ Memory Browser</a></li>
+                      <li><a href="/files" style={{ color: 'var(--accent)', textDecoration: 'none' }}>→ File Explorer</a></li>
                     </ul>
                   </div>
                 </>
               )}
               {interactionModal === 'roadmap' && (
-                <p className="text-lg">🗺️ Roadmap disponible en workspace/mission-control/ROADMAP.md</p>
+                <p>🗺️ Roadmap disponible en workspace/mission-control/ROADMAP.md</p>
               )}
               {interactionModal === 'energy' && (
-                <div className="bg-gray-800 p-4 rounded border border-gray-700 space-y-3">
-                  <div>
-                    <p className="text-sm text-gray-400">Agentes activos:</p>
-                    <p className="text-2xl font-bold text-green-400">
-                      {Object.values(agentStates).filter(s => s.status === 'working').length} / {agents.length}
-                    </p>
-                  </div>
+                <div style={{ backgroundColor: 'var(--surface-elevated)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Agentes activos:</p>
+                  <p style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--success)' }}>
+                    {Object.values(agentStates).filter(s => s.status === 'working').length} / {agents.length}
+                  </p>
                 </div>
               )}
             </div>
-            <button onClick={handleCloseModal} className="mt-6 w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded transition-colors">
+            <button onClick={handleCloseModal} style={{ marginTop: '1.5rem', width: '100%', backgroundColor: 'var(--accent)', color: 'white', fontWeight: 700, padding: '0.75rem', borderRadius: '0.5rem', border: 'none', cursor: 'pointer' }}>
               Cerrar
             </button>
           </div>
         </div>
       )}
 
-      <div className="absolute top-4 left-4 bg-black/70 text-white p-4 rounded-lg backdrop-blur-sm">
-        <h2 className="text-lg font-bold mb-2">🏢 The Office</h2>
-        <div className="text-sm space-y-1 mb-3">
-          <p><strong>Modo: {controlMode === 'orbit' ? '🖱️ Orbit' : '🎮 FPS'}</strong></p>
+      <div style={{ position: 'absolute', top: '1rem', left: '1rem', backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', padding: '1rem', borderRadius: '0.5rem', border: '1px solid var(--border)', minWidth: '180px' }}>
+        <h2 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>🏢 The Office</h2>
+        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.2rem', marginBottom: '0.75rem' }}>
           {controlMode === 'orbit' ? (
             <>
-              <p>🖱️ Mouse: Rotar vista</p>
+              <p>🖱️ Mouse: Rotate view</p>
               <p>🔄 Scroll: Zoom</p>
-              <p>👆 Click: Seleccionar agente</p>
+              <p>👆 Click: Select agent</p>
             </>
           ) : (
             <>
-              <p>Click para bloquear cursor</p>
-              <p>WASD: Mover | ESC: Unlock</p>
+              <p>Click to lock cursor</p>
+              <p>WASD: Move | ESC: Unlock</p>
             </>
           )}
         </div>
         <button
           onClick={() => setControlMode(controlMode === 'orbit' ? 'fps' : 'orbit')}
-          className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-3 rounded text-xs transition-colors"
+          style={{ width: '100%', backgroundColor: 'var(--accent)', color: 'white', fontWeight: 600, padding: '0.375rem 0.75rem', borderRadius: '0.375rem', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
         >
-          Cambiar a modo {controlMode === 'orbit' ? 'FPS' : 'Orbit'}
+          {controlMode === 'orbit' ? 'FPS Mode' : 'Orbit Mode'}
         </button>
       </div>
 
-      <div className="absolute bottom-4 right-4 bg-black/70 text-white p-4 rounded-lg backdrop-blur-sm">
-        <h3 className="text-sm font-bold mb-2">Estados</h3>
-        <div className="text-xs space-y-1">
-          <div className="flex items-center gap-2"><div className="w-3 h-3 bg-green-500 rounded-full"></div><span>Working</span></div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div><span>Thinking</span></div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 bg-gray-500 rounded-full"></div><span>Idle</span></div>
-          <div className="flex items-center gap-2"><div className="w-3 h-3 bg-red-500 rounded-full"></div><span>Error</span></div>
+      <div style={{ position: 'absolute', bottom: '1rem', right: '1rem', backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)', padding: '0.875rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
+        <h3 style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.5rem' }}>Agent States</h3>
+        <div style={{ fontSize: '0.7rem', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><div style={{ width: '0.6rem', height: '0.6rem', backgroundColor: 'var(--success)', borderRadius: '50%' }}></div><span>Working</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><div style={{ width: '0.6rem', height: '0.6rem', backgroundColor: 'var(--info)', borderRadius: '50%' }}></div><span>Thinking</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><div style={{ width: '0.6rem', height: '0.6rem', backgroundColor: 'var(--text-muted)', borderRadius: '50%' }}></div><span>Idle</span></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}><div style={{ width: '0.6rem', height: '0.6rem', backgroundColor: 'var(--error)', borderRadius: '50%' }}></div><span>Error</span></div>
         </div>
       </div>
     </div>
