@@ -44,8 +44,12 @@ export default function Office3D() {
           states[a.id] = {
             id: a.id,
             status,
+            activity: a.activity || 'idle',
             currentTask: a.currentTask || '',
             model: a.model || undefined,
+            tokensPerHour: a.tokensPerHour,
+            tasksInQueue: a.tasksInQueue,
+            uptime: a.uptime,
           };
         }
         setAgentStates(states);
@@ -55,7 +59,7 @@ export default function Office3D() {
     };
 
     fetchAgents();
-    const interval = setInterval(fetchAgents, 30_000);
+    const interval = setInterval(fetchAgents, 5_000);
     return () => clearInterval(interval);
   }, []);
 
@@ -83,7 +87,7 @@ export default function Office3D() {
     { position: new Vector3(9, 0, 0), radius: 0.4 },
   ];
 
-  const defaultState = (id: string): AgentState => ({ id, status: 'idle' as const });
+  const defaultState = (id: string): AgentState => ({ id, status: 'idle' as const, activity: 'idle' as const });
 
   return (
     <div className="fixed inset-0 bg-gray-900" style={{ height: '100vh', width: '100vw' }}>

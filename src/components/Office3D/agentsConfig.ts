@@ -53,10 +53,12 @@ export function buildAgentsFromApi(
 }
 
 export type AgentStatus = 'idle' | 'working' | 'thinking' | 'error';
+export type AgentActivity = 'idle' | 'memory' | 'coding' | 'telegram' | 'delegating' | 'working';
 
 export interface AgentState {
   id: string;
   status: AgentStatus;
+  activity: AgentActivity;
   currentTask?: string;
   model?: string;
   tokensPerHour?: number;
