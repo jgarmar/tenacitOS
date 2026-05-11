@@ -53,3 +53,7 @@ next-env.d.ts
 
 # backup files
 *.bak
+
+# SQLite WAL files (runtime, not source)
+data/*.db-shm
+data/*.db-wal
