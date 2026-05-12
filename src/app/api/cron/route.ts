@@ -4,7 +4,9 @@ import { execSync, execFileSync } from "child_process";
 // GET: List all cron jobs from the OpenClaw gateway
 export async function GET() {
   try {
-    const output = execSync("openclaw cron list --json --all 2>/dev/null", {
+    const output = execSync("openclaw cron list --json --all", {
+      env: { ...process.env, OPENCLAW_NO_RESPAWN: "1", NODE_COMPILE_CACHE: "/var/tmp/openclaw-compile-cache" },
+      stdio: ["ignore", "pipe", "ignore"],
       timeout: 30000,
       encoding: "utf-8",
     });
