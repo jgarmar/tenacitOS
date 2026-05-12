@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { execSync, execFileSync } from "child_process";
+import { readFileSync } from "fs";
+import { join } from "path";
 
-// GET: List all cron jobs from the OpenClaw gateway
+const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/root/.openclaw";
+
+// GET: List all cron jobs — reads jobs.json directly (no subprocess, instant)
 export async function GET() {
   try {
-    const output = execSync("openclaw cron list --json --all", {
-      env: { ...process.env, OPENCLAW_NO_RESPAWN: "1", NODE_COMPILE_CACHE: "/var/tmp/openclaw-compile-cache" },
-      stdio: ["ignore", "pipe", "ignore"],
-      timeout: 30000,
-      encoding: "utf-8",
-    });
-
-    const data = JSON.parse(output);
+    const jobsPath = join(OPENCLAW_DIR, "cron", "jobs.json");
+    const data = JSON.parse(readFileSync(jobsPath, "utf-8"));
     const jobs = (data.jobs || []).map((job: Record<string, unknown>) => ({
       id: job.id,
       agentId: job.agentId || "main",
@@ -104,7 +102,7 @@ export async function POST(request: NextRequest) {
       args.push("--description", description);
     }
 
-    execFileSync("openclaw", args, { timeout: 30000, encoding: "utf-8" });
+    execFileSync("openclaw", args, { timeout: 10000, encoding: "utf-8" });
 
     return GET();
   } catch (error) {
@@ -134,7 +132,7 @@ export async function PUT(request: NextRequest) {
       if (timezone) args.push("--tz", timezone);
       if (description !== undefined) args.push("--description", description);
 
-      execFileSync("openclaw", args, { timeout: 30000, encoding: "utf-8" });
+      execFileSync("openclaw", args, { timeout: 10000, encoding: "utf-8" });
       return NextResponse.json({ success: true, id });
     }
 
@@ -142,7 +140,7 @@ export async function PUT(request: NextRequest) {
     if (enabled !== undefined) {
       const action = enabled ? "enable" : "disable";
       execFileSync("openclaw", ["cron", action, id], {
-        timeout: 30000,
+        timeout: 10000,
         encoding: "utf-8",
       });
       return NextResponse.json({ success: true, id, enabled });
@@ -169,7 +167,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     execFileSync("openclaw", ["cron", "rm", id], {
-      timeout: 30000,
+      timeout: 10000,
       encoding: "utf-8",
     });
 
