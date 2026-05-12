@@ -5,7 +5,7 @@ import { execSync, execFileSync } from "child_process";
 export async function GET() {
   try {
     const output = execSync("openclaw cron list --json --all 2>/dev/null", {
-      timeout: 10000,
+      timeout: 30000,
       encoding: "utf-8",
     });
 
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       args.push("--description", description);
     }
 
-    execFileSync("openclaw", args, { timeout: 10000, encoding: "utf-8" });
+    execFileSync("openclaw", args, { timeout: 30000, encoding: "utf-8" });
 
     return GET();
   } catch (error) {
@@ -132,7 +132,7 @@ export async function PUT(request: NextRequest) {
       if (timezone) args.push("--tz", timezone);
       if (description !== undefined) args.push("--description", description);
 
-      execFileSync("openclaw", args, { timeout: 10000, encoding: "utf-8" });
+      execFileSync("openclaw", args, { timeout: 30000, encoding: "utf-8" });
       return NextResponse.json({ success: true, id });
     }
 
@@ -140,7 +140,7 @@ export async function PUT(request: NextRequest) {
     if (enabled !== undefined) {
       const action = enabled ? "enable" : "disable";
       execFileSync("openclaw", ["cron", action, id], {
-        timeout: 10000,
+        timeout: 30000,
         encoding: "utf-8",
       });
       return NextResponse.json({ success: true, id, enabled });
@@ -167,7 +167,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     execFileSync("openclaw", ["cron", "rm", id], {
-      timeout: 10000,
+      timeout: 30000,
       encoding: "utf-8",
     });
 

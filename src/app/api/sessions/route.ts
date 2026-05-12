@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
 async function listSessions(): Promise<NextResponse> {
   try {
     const output = execSync('openclaw sessions --json 2>/dev/null', {
-      timeout: 10000,
+      timeout: 30000,
       encoding: 'utf-8',
     });
 
@@ -194,7 +194,7 @@ async function getSessionMessages(sessionId: string): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 });
   }
 
-  const sessionsDir = join(OPENCLAW_DIR, 'agents', 'main', 'sessions');
+  const sessionsDir = join(OPENCLAW_DIR, 'agents', 'pirion', 'sessions');
   const filePath = join(sessionsDir, `${sessionId}.jsonl`);
 
   if (!existsSync(filePath)) {
