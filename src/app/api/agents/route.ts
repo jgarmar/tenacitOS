@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
-import { readFileSync } from "fs";
+import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+
+const OPENCLAW_DIR = process.env.OPENCLAW_DIR || "/root/.openclaw";
+
+function countActiveSessions(agentId: string): number {
+  try {
+    const sessionsPath = join(OPENCLAW_DIR, "agents", agentId, "sessions", "sessions.json");
+    if (!existsSync(sessionsPath)) return 0;
+    const data = JSON.parse(readFileSync(sessionsPath, "utf-8")) as Record<string, { updatedAt?: number }>;
+    const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
+    return Object.values(data).filter(s => s.updatedAt && s.updatedAt > twoHoursAgo).length;
+  } catch { return 0; }
+}
 
 export const dynamic = "force-dynamic";
 
@@ -132,7 +144,7 @@ export async function GET() {
         botToken: botToken ? "configured" : undefined,
         status,
         lastActivity,
-        activeSessions: 0, // TODO: get from sessions API
+        activeSessions: countActiveSessions(agent.id),
       };
     });
 
