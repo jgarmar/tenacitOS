@@ -16,6 +16,7 @@ import {
   DollarSign,
   Settings,
   History,
+  Gamepad2,
 } from "lucide-react";
 
 const dockItems = [
@@ -25,6 +26,7 @@ const dockItems = [
   { href: "/memory", label: "Memory", icon: Brain },
   { href: "/agents", label: "Agents", icon: Bot },
   { href: "/office", label: "Office", icon: Building2 },
+  { href: "/office-pixel", label: "Office Pixel", icon: Gamepad2 },
   { href: "/activity", label: "Activity", icon: Activity },
   { href: "/cron", label: "Cron Jobs", icon: Clock },
   { href: "/sessions", label: "Sessions", icon: History },
