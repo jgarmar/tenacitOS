@@ -161,6 +161,7 @@ export default function OfficePixelPage() {
   const [selectedAgent, setSelectedAgent] = useState<AgentInfo | null>(null);
   const [hoveredAgent, setHoveredAgent] = useState<number | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
+  const [agentStates, setAgentStates] = useState<any[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [zoom, setZoom] = useState(3);
   const [panX, setPanX] = useState(0);
@@ -228,6 +229,53 @@ export default function OfficePixelPage() {
     init();
     return () => { cancelled = true; };
   }, []);
+
+  // Poll agent activity from API
+  useEffect(() => {
+    if (!loaded) return;
+
+    async function fetchAgentStates() {
+      try {
+        const res = await fetch("/api/office/pixel");
+        if (!res.ok) return;
+        const data = await res.json();
+        const states = data.agents || [];
+        setAgentStates(states);
+
+        // Update character states based on real activity
+        const chars = charactersRef.current;
+        for (const ch of chars) {
+          const agentState = states.find((s: any) => {
+            const nameMatch = s.name?.toLowerCase() === AGENTS[ch.id]?.name?.toLowerCase();
+            const idMatch = s.id === AGENTS[ch.id]?.name?.toLowerCase();
+            return nameMatch || idMatch;
+          });
+
+          if (agentState) {
+            ch.isActive = agentState.isActive;
+            if (!agentState.isActive) {
+              // Inactive agents: stay idle, don't wander
+              if (ch.state === CS.WALK) {
+                ch.state = CS.IDLE;
+                ch.wanderTimer = 999;
+              }
+            } else {
+              // Active agents: resume wandering if they were forced idle
+              if (ch.wanderTimer >= 999) {
+                ch.wanderTimer = Math.random() * 3 + 1;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // Silently fail on network errors
+      }
+    }
+
+    fetchAgentStates();
+    const interval = setInterval(fetchAgentStates, 10000);
+    return () => clearInterval(interval);
+  }, [loaded]);
 
   // ── Render frame ──────────────────────────────────────────
   const renderFrame = useCallback((ctx: CanvasRenderingContext2D, width: number, height: number, time: number) => {
@@ -579,51 +627,61 @@ export default function OfficePixelPage() {
     setIsPanning(false);
   }, []);
 
+  const [showPanel, setShowPanel] = useState(false);
+
   return (
     <div className="flex flex-col h-full" style={{ minHeight: "calc(100vh - 48px - 32px)" }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold" style={{ color: "var(--text-primary)" }}>
             🎮 Oficina Pixel Art
           </h1>
-          <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>
+          <p className="text-xs sm:text-sm mt-1 hidden sm:block" style={{ color: "var(--text-muted)" }}>
             Los agentes de OpenClaw en su oficina. Click para seleccionar. Scroll para zoom.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
           <button
             onClick={() => setZoom(z => Math.min(6, z + 0.5))}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-lg text-sm font-medium min-w-[44px] min-h-[44px]"
             style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
           >
             🔍+
           </button>
           <button
             onClick={() => setZoom(z => Math.max(1, z - 0.5))}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-lg text-sm font-medium min-w-[44px] min-h-[44px]"
             style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
           >
             🔍−
           </button>
           <button
             onClick={() => { setPanX(0); setPanY(0); setZoom(3); }}
-            className="px-3 py-1.5 rounded-lg text-sm font-medium"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-lg text-sm font-medium min-w-[44px] min-h-[44px]"
             style={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
           >
-            ↺ Reset
+            ↺
+          </button>
+          {/* Mobile toggle panel button */}
+          <button
+            onClick={() => setShowPanel(!showPanel)}
+            className="p-2 sm:px-3 sm:py-1.5 rounded-lg text-sm font-medium min-w-[44px] min-h-[44px] lg:hidden"
+            style={{ backgroundColor: showPanel ? "var(--accent)" : "var(--card)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+          >
+            👥
           </button>
         </div>
       </div>
 
-      <div className="flex flex-1 gap-4" style={{ minHeight: 0 }}>
+      <div className="flex flex-1 gap-4 relative" style={{ minHeight: 0 }}>
         {/* Canvas area */}
         <div
           className="flex-1 rounded-xl overflow-hidden relative"
           style={{
             backgroundColor: "#1a1a2e",
             border: "1px solid var(--border)",
-            minHeight: "500px",
+            minHeight: "400px",
           }}
         >
           {!loaded && (
@@ -647,15 +705,31 @@ export default function OfficePixelPage() {
           />
         </div>
 
-        {/* Side panel */}
+        {/* Side panel - desktop: always visible, mobile: overlay */}
         <div
-          className="w-72 rounded-xl p-4 overflow-y-auto flex-shrink-0"
+          className={`
+            ${showPanel ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+            lg:relative lg:translate-x-0
+            absolute right-0 top-0 bottom-0 z-20
+            w-72 max-w-[85vw] sm:w-72
+            rounded-xl p-4 overflow-y-auto flex-shrink-0
+            transition-transform duration-200 ease-in-out
+          `}
           style={{
             backgroundColor: "var(--card)",
             border: "1px solid var(--border)",
             maxHeight: "calc(100vh - 48px - 32px - 80px)",
           }}
         >
+          {/* Close button on mobile */}
+          <button
+            onClick={() => setShowPanel(false)}
+            className="lg:hidden absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: "var(--card-elevated)", color: "var(--text-muted)" }}
+          >
+            ✕
+          </button>
+
           <h2 className="text-lg font-bold mb-3" style={{ color: "var(--text-primary)" }}>
             Agentes
           </h2>
@@ -664,7 +738,10 @@ export default function OfficePixelPage() {
             {AGENTS.map((agent) => (
               <button
                 key={agent.id}
-                onClick={() => setSelectedAgent(selectedAgent?.id === agent.id ? null : agent)}
+                onClick={() => {
+                  setSelectedAgent(selectedAgent?.id === agent.id ? null : agent);
+                  if (window.innerWidth < 1024) setShowPanel(false);
+                }}
                 className="w-full text-left p-3 rounded-lg transition-all"
                 style={{
                   backgroundColor: selectedAgent?.id === agent.id ? agent.color + "20" : "var(--card-elevated)",
@@ -673,7 +750,7 @@ export default function OfficePixelPage() {
               >
                 <div className="flex items-center gap-2">
                   <span className="text-xl">{agent.emoji}</span>
-                  <div>
+                  <div className="flex-1">
                     <div className="font-semibold text-sm" style={{ color: agent.color }}>
                       {agent.name}
                     </div>
@@ -681,6 +758,11 @@ export default function OfficePixelPage() {
                       {agent.role}
                     </div>
                   </div>
+                  {(() => {
+                    const realState = agentStates.find((s: any) => s.name?.toLowerCase() === agent.name?.toLowerCase());
+                    const dotColor = realState?.isActive ? "#10B981" : realState?.activity === "idle" ? "#F59E0B" : "#6B7280";
+                    return <span className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: dotColor }} />;
+                  })()}
                 </div>
               </button>
             ))}
@@ -710,13 +792,22 @@ export default function OfficePixelPage() {
                 {selectedAgent.description}
               </p>
               <div className="mt-2 flex items-center gap-2">
-                <span
-                  className="inline-block w-3 h-3 rounded-full"
-                  style={{ backgroundColor: "#10B981" }}
-                />
-                <span className="text-xs" style={{ color: "var(--text-muted)" }}>
-                  Online — {characters.find(c => c.id === selectedAgent.id)?.state === CS.TYPE ? "Escribiendo" : characters.find(c => c.id === selectedAgent.id)?.state === CS.WALK ? "Caminando" : "Idle"}
-                </span>
+                {(() => {
+                  const realState = agentStates.find((s: any) => s.name?.toLowerCase() === selectedAgent.name?.toLowerCase());
+                  const dotColor = realState?.isActive ? "#10B981" : realState?.activity === "idle" ? "#F59E0B" : "#6B7280";
+                  const charState = characters.find(c => c.id === selectedAgent.id);
+                  const stateLabel = charState?.state === CS.TYPE ? "Escribiendo" : charState?.state === CS.WALK ? "Caminando" : "Idle";
+                  const statusLabel = realState?.isActive ? "Online" : realState?.activity === "idle" ? "Idle" : "Offline";
+                  return (
+                    <>
+                      <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: dotColor }} />
+                      <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+                        {statusLabel} — {stateLabel}
+                        {realState?.inputTokens ? ` — ${(realState.inputTokens / 1000).toFixed(1)}k tokens` : ""}
+                      </span>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           )}
