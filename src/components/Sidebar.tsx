@@ -34,7 +34,8 @@ import { getAgentDisplayName } from "@/config/branding";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/agents", label: "Agents", icon: Users },
-  { href: "/office", label: "🎮 Office", icon: Gamepad2, highlight: true },
+  { href: "/office", label: "🎮 Office 3D", icon: Gamepad2, highlight: true },
+  { href: "/office-pixel", label: "🟩 Office Pixel", icon: Gamepad2 },
   { href: "/actions", label: "Quick Actions", icon: Zap },
   { href: "/system", label: "System", icon: Server },
   { href: "/logs", label: "Live Logs", icon: Terminal },
